@@ -18,9 +18,7 @@ app.use("/api/properties", propertyRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
-app.get("/", (req, res) => {
-  res.send("Welcome to ToLet App API");
-});
+
 
 // Database Connect
 mongoose
