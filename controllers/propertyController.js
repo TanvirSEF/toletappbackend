@@ -10,11 +10,12 @@ exports.createProperty = async (req, res) => {
       price: req.body.price,
       size: req.body.size,
       image: req.body.image,
-      owner: req.user.userId
+      owner: req.user._id
     });
 
     res.status(201).json(property);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -47,7 +48,7 @@ exports.updateProperty = async (req, res) => {
     let property = await Property.findById(req.params.id);
     if (!property) return res.status(404).json({ message: "Property not found" });
 
-    if (property.owner.toString() !== req.user._id) {
+    if (property.owner.toString() !== req.user._id.toString()) {
       return res.status(401).json({ message: "Not authorized to update" });
     }
 
@@ -64,11 +65,11 @@ exports.deleteProperty = async (req, res) => {
     const property = await Property.findById(req.params.id);
     if (!property) return res.status(404).json({ message: "Property not found" });
 
-    if (property.owner.toString() !== req.user._id) {
+    if (property.owner.toString() !== req.user._id.toString()) {
       return res.status(401).json({ message: "Not authorized to delete" });
     }
 
-    await property.remove();
+    await Property.findByIdAndDelete(req.params.id);
     res.json({ message: "Property deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
