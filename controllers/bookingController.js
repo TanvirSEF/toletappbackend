@@ -42,16 +42,22 @@ exports.createBooking = async (req, res) => {
 
 exports.getMyBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({ renter: req.user._id }).populate([
-      { path: "property" },
-      { path: "owner", select: "-password" },
-    ]);
-    res.json(bookings);
+    const bookings = await Booking.find({ renter: req.user._id })
+      .populate("property")
+      .populate("owner", "-password");
+
+    const visibleContacts = bookings.map(b => ({
+      ...b.toObject(),
+      ownerContact: b.isContactRevealed ? b.owner.phone : "Hidden"
+    }));
+
+    res.json(visibleContacts);
   } catch (err) {
-  console.error("Booking fetch error:", err);
-  res.status(500).json({ message: "Server Error", error: err.message });
-}
+    console.error("Get My Bookings Error:", err);
+    res.status(500).json({ message: "Server Error" });
+  }
 };
+
 
 // Admin or Owner can see all
 exports.getAllBookings = async (req, res) => {
@@ -63,5 +69,54 @@ exports.getAllBookings = async (req, res) => {
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ message: "Server Error" });
+  }
+};
+
+exports.confirmBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    // Check if current user is the owner or admin
+    if (
+      req.user.role !== "admin" &&
+      booking.owner.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    booking.status = "confirmed";
+    booking.isContactRevealed = true;
+
+    await booking.save();
+
+    res.json({ message: "Booking confirmed", booking });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.cancelBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    if (
+      req.user.role !== "admin" &&
+      booking.owner.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    booking.status = "cancelled";
+    booking.isContactRevealed = false;
+
+    await booking.save();
+
+    res.json({ message: "Booking cancelled", booking });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
   }
 };
