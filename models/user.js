@@ -19,6 +19,12 @@ const userSchema = new mongoose.Schema({
   },
   date: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
+  favorites: [
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "property",
+  },
+],
 });
 
 // Hash password before save

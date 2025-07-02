@@ -79,3 +79,37 @@ exports.approveUpgrade = async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 };
+
+// Toggle Favorite
+exports.toggleFavorite = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    const propertyId = req.params.propertyId;
+
+    const isFavorited = user.favorites.includes(propertyId);
+
+    if (isFavorited) {
+      user.favorites.pull(propertyId);
+    } else {
+      user.favorites.push(propertyId);
+    }
+
+    await user.save();
+
+    res.json({
+      message: isFavorited ? "Removed from favorites" : "Added to favorites",
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Get All Favorites
+exports.getFavorites = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate("favorites");
+    res.json(user.favorites);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};

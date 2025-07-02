@@ -44,12 +44,27 @@ exports.getMyBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({ renter: req.user._id })
       .populate("property")
-      .populate("owner", "-password");
+      .populate("owner", "name email phone");
 
-    const visibleContacts = bookings.map(b => ({
-      ...b.toObject(),
-      ownerContact: b.isContactRevealed ? b.owner.phone : "Hidden"
-    }));
+    const visibleContacts = bookings.map((b) => {
+      const obj = b.toObject();
+      
+      // Hide owner contact info if not revealed yet
+      if (!b.isContactRevealed) {
+        delete obj.owner.phone;
+        delete obj.owner.email;
+        delete obj.owner.name;
+        obj.ownerContact = "Hidden until booking is confirmed";
+      } else {
+        obj.ownerContact = {
+          name: b.owner.name,
+          phone: b.owner.phone,
+          email: b.owner.email,
+        };
+      }
+
+      return obj;
+    });
 
     res.json(visibleContacts);
   } catch (err) {
@@ -57,6 +72,7 @@ exports.getMyBookings = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+
 
 
 // Admin or Owner can see all
