@@ -11,9 +11,29 @@ exports.getUserNotifications = async (req, res) => {
 
 exports.markAsRead = async (req, res) => {
   try {
-    await Notification.findByIdAndUpdate(req.params.id, { isRead: true });
-    res.json({ message: "Marked as read" });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    const notification = await Notification.findById(req.params.id);
+    if (!notification || notification.user.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ message: "Notification not found or unauthorized" });
+    }
+
+    notification.isRead = true;
+    await notification.save();
+    res.json({ message: "Notification marked as read" });
+  } catch (err) {
+    console.error("Mark As Read Error:", err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+exports.getUnreadCount = async (req, res) => {
+  try {
+    const count = await Notification.countDocuments({
+      user: req.user._id,
+      isRead: false,
+    });
+    res.json({ count });
+  } catch (err) {
+    console.error("Unread Count Error:", err);
+    res.status(500).json({ message: "Server Error" });
   }
 };

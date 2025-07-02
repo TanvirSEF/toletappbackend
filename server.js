@@ -1,5 +1,5 @@
 const express = require("express");
-const http = require("http"); // Needed to create custom server for socket.io
+const http = require("http");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
@@ -8,13 +8,20 @@ const socketio = require("socket.io");
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app); // Create server instance for socket.io
+const server = http.createServer(app);
+
+// Setup Socket.io
 const io = socketio(server, {
   cors: {
-    origin: "*", // Change to your frontend URL in production
+    origin: "*", // Replace with frontend URL in production
     methods: ["GET", "POST"],
   },
 });
+
+// Share io and online users across app
+const onlineUsers = new Map();
+app.set("io", io);
+app.set("onlineUsers", onlineUsers);
 
 // Middleware
 app.use(cors());
@@ -31,7 +38,6 @@ const conversationRoutes = require("./routes/conversationRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 
-
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/messages", messageRoutes);
@@ -42,29 +48,28 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 
+// Root endpoint
 app.get("/", (req, res) => {
   res.send("Welcome to the ToLet App API with Socket.io!");
 });
 
-// Database Connection
+// MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.error("MongoDB Connection Error:", err));
 
-// Real-time Socket.io Events
-const onlineUsers = new Map();
-
+// Socket.io Real-time Handlers
 io.on("connection", (socket) => {
   console.log("🔌 User connected:", socket.id);
 
   socket.on("join", (userId) => {
-    onlineUsers.set(userId, socket.id);
-    console.log(`👤 User ${userId} joined with socket ID ${socket.id}`);
+    onlineUsers.set(userId.toString(), socket.id);
+    console.log(`User ${userId} joined with socket ID ${socket.id}`);
   });
 
   socket.on("sendMessage", ({ senderId, receiverId, message }) => {
-    const receiverSocketId = onlineUsers.get(receiverId);
+    const receiverSocketId = onlineUsers.get(receiverId.toString());
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("receiveMessage", {
         senderId,
@@ -80,12 +85,12 @@ io.on("connection", (socket) => {
         break;
       }
     }
-    console.log("❌ User disconnected:", socket.id);
+    console.log("User disconnected:", socket.id);
   });
 });
 
 // Start Server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(` Server running on port ${PORT}`);
 });

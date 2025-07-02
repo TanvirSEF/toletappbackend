@@ -1,14 +1,21 @@
+// utils/sendNotification.js
 const Notification = require("../models/notification");
 
-const sendNotification = async ({ userId, type, message, link }) => {
+const sendNotification = async ({ userId, type, message, link, io }) => {
   try {
-    const notification = new Notification({
+    const notification = await Notification.create({
       user: userId,
       type,
       message,
       link,
     });
-    await notification.save();
+
+    // Emit real-time notification to user via socket.io
+    if (io) {
+      io.to(userId.toString()).emit("new_notification", notification);
+    }
+
+    return notification;
   } catch (error) {
     console.error("Notification Error:", error.message);
   }

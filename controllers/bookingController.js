@@ -34,18 +34,18 @@ exports.createBooking = async (req, res) => {
       commission: commissionAmount,
     });
 
+    await sendNotification({
+      userId: property.owner._id,
+      type: "booking",
+      message: `${req.user.name} has requested to book your property.`,
+      link: `/bookings/all`,
+    });
+
     res.status(201).json({ message: "Booking successful", booking });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
-  await sendNotification({
-  userId: Property.owner._id,
-  type: "booking",
-  message: `${req.user.name} has requested to book your property.`,
-  link: `/bookings/all`
-});
-
 };
 
 exports.getMyBookings = async (req, res) => {
@@ -56,7 +56,7 @@ exports.getMyBookings = async (req, res) => {
 
     const visibleContacts = bookings.map((b) => {
       const obj = b.toObject();
-      
+
       // Hide owner contact info if not revealed yet
       if (!b.isContactRevealed) {
         delete obj.owner.phone;
@@ -80,8 +80,6 @@ exports.getMyBookings = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
-
-
 
 // Admin or Owner can see all
 exports.getAllBookings = async (req, res) => {
@@ -109,24 +107,19 @@ exports.confirmBooking = async (req, res) => {
     ) {
       return res.status(403).json({ message: "Unauthorized" });
     }
-
     booking.status = "confirmed";
     booking.isContactRevealed = true;
-
     await booking.save();
-
+    await sendNotification({
+      userId: booking.renter,
+      type: "booking",
+      message: `Your booking has been confirmed.`,
+      link: `/bookings/my`,
+    });
     res.json({ message: "Booking confirmed", booking });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
-
-  await sendNotification({
-  userId: Booking.renter,
-  type: "booking",
-  message: `Your booking has been confirmed.`,
-  link: `/bookings/my`
-});
-
 };
 
 exports.cancelBooking = async (req, res) => {
