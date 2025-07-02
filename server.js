@@ -4,11 +4,14 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const socketio = require("socket.io");
+const helmet = require("helmet");
+const mongoSanitize = require("express-mongo-sanitize");
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+
 
 // Setup Socket.io
 const io = socketio(server, {
@@ -26,6 +29,9 @@ app.set("onlineUsers", onlineUsers);
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(helmet()); // Security headers
+app.use(mongoSanitize()); // Prevent NoSQL injection
 
 // Routes
 const authRoutes = require("./routes/authRoutes");
