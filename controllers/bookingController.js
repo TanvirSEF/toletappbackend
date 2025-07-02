@@ -1,5 +1,6 @@
 const Booking = require("../models/booking");
 const Property = require("../models/property");
+const sendNotification = require("../utils/sendNotification");
 
 exports.createBooking = async (req, res) => {
   try {
