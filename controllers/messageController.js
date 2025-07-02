@@ -1,5 +1,6 @@
 const Message = require("../models/message");
 const Conversation = require("../models/conversation");
+const sendNotification = require("../utils/sendNotification");
 
 // Send a message
 exports.sendMessage = async (req, res) => {
@@ -26,6 +27,13 @@ exports.sendMessage = async (req, res) => {
     console.error("Send Message Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
+  await sendNotification({
+  userId: receiverId,
+  type: "message",
+  message: `You have a new message.`,
+  link: `/messages/${conversationId}`
+});
+
 };
 
 // Get all messages of a conversation

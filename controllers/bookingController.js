@@ -39,6 +39,13 @@ exports.createBooking = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
+  await sendNotification({
+  userId: Property.owner._id,
+  type: "booking",
+  message: `${req.user.name} has requested to book your property.`,
+  link: `/bookings/all`
+});
+
 };
 
 exports.getMyBookings = async (req, res) => {
@@ -112,6 +119,14 @@ exports.confirmBooking = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
+
+  await sendNotification({
+  userId: Booking.renter,
+  type: "booking",
+  message: `Your booking has been confirmed.`,
+  link: `/bookings/my`
+});
+
 };
 
 exports.cancelBooking = async (req, res) => {
