@@ -6,6 +6,7 @@ const cors = require("cors");
 const socketio = require("socket.io");
 const helmet = require("helmet");
 const mongoSanitize = require("express-mongo-sanitize");
+const hpp = require('hpp');
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.set("onlineUsers", onlineUsers);
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(hpp()); // Prevent HTTP Parameter Pollution
 app.use(express.urlencoded({ extended: true }));
 app.use(helmet()); // Security headers
 app.use(mongoSanitize()); // Prevent NoSQL injection
