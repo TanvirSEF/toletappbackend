@@ -113,3 +113,14 @@ exports.getFavorites = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+exports.uploadUserProfilePic = async (req, res) => {
+  try {
+    const user = req.user;
+    user.image = req.file.path; // Cloudinary URL
+    await user.save();
+    res.json({ message: "Profile picture uploaded", image: user.image });
+  } catch (err) {
+    res.status(500).json({ message: "Upload failed" });
+  }
+};

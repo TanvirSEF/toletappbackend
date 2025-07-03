@@ -75,3 +75,24 @@ exports.deleteProperty = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+// Controller
+exports.uploadPropertyImagesController = async (req, res) => {
+  const propertyId = req.params.id;
+
+  try {
+    const imageUrls = req.files.map((file) => file.path);
+
+    const property = await Property.findByIdAndUpdate(
+      propertyId,
+      { $push: { images: { $each: imageUrls } } },
+      { new: true }
+    );
+
+    res.json({ message: "Images uploaded", images: property.images });
+  } catch (error) {
+    console.error("Upload Error:", error);
+    res.status(500).json({ message: "Failed to upload images" });
+  }
+};
+

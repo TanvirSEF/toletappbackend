@@ -6,7 +6,7 @@ const propertySchema = new mongoose.Schema({
   address: { type: String, required: true },
   price: { type: Number, required: true },
   size: { type: String, required: true },
-  image: { type: String, default: "" },
+  images: { type: [String], default: [] },
   owner: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
   isAvailable: { type: Boolean, default: true },
   date: { type: Date, default: Date.now }
