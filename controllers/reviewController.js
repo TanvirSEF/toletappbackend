@@ -1,8 +1,15 @@
 const Review = require("../models/review");
 const Booking = require("../models/booking");
+const { validationResult } = require("express-validator");
+const logger = require("../config/logger");
 
 // Renter creates review
 exports.createReview = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   try {
     const { propertyId } = req.params;
     const { rating, comment } = req.body;
@@ -29,8 +36,10 @@ exports.createReview = async (req, res) => {
     res.status(201).json(review);
   } catch (err) {
     if (err.code === 11000) {
+      logger.error("Create Review Error (Duplicate):", err);
       res.status(400).json({ message: "You already reviewed this property" });
     } else {
+      logger.error("Create Review Error:", err);
       res.status(500).json({ message: "Server error" });
     }
   }
@@ -44,6 +53,7 @@ exports.getReviewsByProperty = async (req, res) => {
 
     res.json(reviews);
   } catch (err) {
+    logger.error("Get Reviews By Property Error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };

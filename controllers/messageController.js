@@ -1,6 +1,9 @@
 const Message = require("../models/message");
 const Conversation = require("../models/conversation");
 const sendNotification = require("../utils/sendNotification");
+const sendEmail = require("../utils/sendEmail");
+const User = require("../models/user");
+const logger = require("../config/logger");
 
 // Send a message
 exports.sendMessage = async (req, res) => {
@@ -28,6 +31,8 @@ exports.sendMessage = async (req, res) => {
       (id) => id.toString() !== senderId.toString()
     );
 
+    const receiver = await User.findById(receiverId);
+
     // Real-time push via Socket.io
     const io = req.app.get("io");
     const onlineUsers = req.app.get("onlineUsers");
@@ -50,14 +55,14 @@ exports.sendMessage = async (req, res) => {
       link: `/messages/${conversationId}`,
     });
     await sendEmail({
-      to: receiverId.email,
+      to: receiver.email,
       subject: "📩 New Message in To-Let",
       html: `<p>You have received a new message. <a href="https://yourapp.com/messages/${conversationId}">View Message</a></p>`,
     });
 
     res.status(201).json(message);
   } catch (err) {
-    console.error("Send Message Error:", err);
+    logger.error("Send Message Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -81,7 +86,7 @@ exports.getMessagesByConversation = async (req, res) => {
 
     res.json(messages);
   } catch (err) {
-    console.error("Get Messages Error:", err);
+    logger.error("Get Messages Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -103,7 +108,7 @@ exports.markMessagesAsRead = async (req, res) => {
 
     res.json({ message: "Messages marked as read" });
   } catch (err) {
-    console.error("Mark as read error:", err);
+    logger.error("Mark as read error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -122,7 +127,7 @@ exports.getUnreadMessageCount = async (req, res) => {
 
     res.json({ unreadCount: count });
   } catch (err) {
-    console.error("Unread count error:", err);
+    logger.error("Unread count error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };

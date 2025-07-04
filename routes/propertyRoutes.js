@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { body } = require("express-validator");
 const protect = require("../middlewares/authMiddleware");
 const authorize = require("../middlewares/roleMiddleware");
 const { uploadPropertyImages } = require("../middlewares/upload");
@@ -19,10 +20,34 @@ router.get("/", getAllProperties);
 router.get("/my-properties", protect, authorize("owner"), getMyProperties);
 
 // Owner Create Property
-router.post("/", protect, authorize("owner"), createProperty);
+router.post(
+  "/",
+  protect,
+  authorize("owner"),
+  [
+    body("title", "Title is required").not().isEmpty(),
+    body("description", "Description is required").not().isEmpty(),
+    body("address", "Address is required").not().isEmpty(),
+    body("price", "Price is required").isNumeric(),
+    body("size", "Size is required").not().isEmpty(),
+  ],
+  createProperty
+);
 
 // Owner Update Property
-router.put("/:id", protect, authorize("owner"), updateProperty);
+router.put(
+  "/:id",
+  protect,
+  authorize("owner"),
+  [
+    body("title", "Title is required").optional().not().isEmpty(),
+    body("description", "Description is required").optional().not().isEmpty(),
+    body("address", "Address is required").optional().not().isEmpty(),
+    body("price", "Price is required").optional().isNumeric(),
+    body("size", "Size is required").optional().isNumeric(),
+  ],
+  updateProperty
+);
 
 // Owner Delete Property
 router.delete("/:id", protect, authorize("owner"), deleteProperty);

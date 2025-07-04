@@ -1,6 +1,9 @@
 const Booking = require("../models/booking");
 const Property = require("../models/property");
 const sendNotification = require("../utils/sendNotification");
+const sendEmail = require("../utils/sendEmail");
+const User = require("../models/user");
+const logger = require("../config/logger");
 
 exports.createBooking = async (req, res) => {
   try {
@@ -43,7 +46,7 @@ exports.createBooking = async (req, res) => {
 
     res.status(201).json({ message: "Booking successful", booking });
   } catch (error) {
-    console.error(error);
+    logger.error("Create Booking Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -56,27 +59,19 @@ exports.getMyBookings = async (req, res) => {
 
     const visibleContacts = bookings.map((b) => {
       const obj = b.toObject();
-
-      // Hide owner contact info if not revealed yet
       if (!b.isContactRevealed) {
-        delete obj.owner.phone;
-        delete obj.owner.email;
-        delete obj.owner.name;
-        obj.ownerContact = "Hidden until booking is confirmed";
-      } else {
-        obj.ownerContact = {
-          name: b.owner.name,
-          phone: b.owner.phone,
-          email: b.owner.email,
+        obj.owner = {
+          name: "Hidden",
+          email: "Hidden",
+          phone: "Hidden",
         };
       }
-
       return obj;
     });
 
     res.json(visibleContacts);
   } catch (err) {
-    console.error("Get My Bookings Error:", err);
+    logger.error("Get My Bookings Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -90,13 +85,14 @@ exports.getAllBookings = async (req, res) => {
     );
     res.json(bookings);
   } catch (err) {
+    logger.error("Get All Bookings Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
 
 exports.confirmBooking = async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id);
+    const booking = await Booking.findById(req.params.id).populate('renter').populate('property');
 
     if (!booking) return res.status(404).json({ message: "Booking not found" });
 
@@ -117,20 +113,21 @@ exports.confirmBooking = async (req, res) => {
       link: `/bookings/my`,
     });
     await sendEmail({
-      to: renter.email,
+      to: booking.renter.email,
       subject: "Booking Confirmed",
-      html: `<p>Dear ${renter.name},</p>
-         <p>Your booking for the property <strong>${property.title}</strong> has been <b>confirmed</b>.</p>`,
+      html: `<p>Dear ${booking.renter.name},</p>
+         <p>Your booking for the property <strong>${booking.property.title}</strong> has been <b>confirmed</b>.</p>`,
     });
     res.json({ message: "Booking confirmed", booking });
   } catch (err) {
+    logger.error("Confirm Booking Error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
 
 exports.cancelBooking = async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id);
+    const booking = await Booking.findById(req.params.id).populate('renter').populate('property');
 
     if (!booking) return res.status(404).json({ message: "Booking not found" });
 
@@ -146,8 +143,23 @@ exports.cancelBooking = async (req, res) => {
 
     await booking.save();
 
+    await sendNotification({
+      userId: booking.renter._id,
+      type: "booking",
+      message: `Your booking for the property ${booking.property.title} has been cancelled.`,
+      link: `/bookings/my`,
+    });
+
+    await sendEmail({
+      to: booking.renter.email,
+      subject: "Booking Cancelled",
+      html: `<p>Dear ${booking.renter.name},</p>
+         <p>Your booking for the property <strong>${booking.property.title}</strong> has been <b>cancelled</b>.</p>`,
+    });
+
     res.json({ message: "Booking cancelled", booking });
   } catch (err) {
+    logger.error("Cancel Booking Error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };

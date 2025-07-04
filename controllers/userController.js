@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const User = require('../models/user');
+const logger = require("../config/logger");
 
 // Request an upgrade to 'owner' role
 exports.requestUpgrade = async (req, res) => {
@@ -24,7 +25,7 @@ exports.requestUpgrade = async (req, res) => {
 
     res.json({ message: 'Upgrade request sent successfully' });
   } catch (err) {
-    console.error('Upgrade request error:', err);
+    logger.error('Upgrade request error:', err);
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -35,7 +36,7 @@ exports.getUpgradeRequests = async (req, res) => {
     const requests = await User.find({ upgradeRequest: true, isApproved: false });
     res.json(requests);
   } catch (err) {
-    console.error('Get upgrade requests error:', err);
+    logger.error('Get upgrade requests error:', err);
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -75,7 +76,7 @@ exports.approveUpgrade = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('Approve upgrade error:', err);
+    logger.error('Approve upgrade error:', err);
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -100,6 +101,7 @@ exports.toggleFavorite = async (req, res) => {
       message: isFavorited ? "Removed from favorites" : "Added to favorites",
     });
   } catch (err) {
+    logger.error("Toggle Favorite Error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -110,6 +112,7 @@ exports.getFavorites = async (req, res) => {
     const user = await User.findById(req.user._id).populate("favorites");
     res.json(user.favorites);
   } catch (err) {
+    logger.error("Get Favorites Error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -121,6 +124,7 @@ exports.uploadUserProfilePic = async (req, res) => {
     await user.save();
     res.json({ message: "Profile picture uploaded", image: user.image });
   } catch (err) {
+    logger.error("Upload Profile Pic Error:", err);
     res.status(500).json({ message: "Upload failed" });
   }
 };

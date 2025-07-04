@@ -1,5 +1,6 @@
 const Conversation = require("../models/conversation");
 const Booking = require("../models/booking");
+const logger = require("../config/logger");
 
 // Start new conversation (only if booking is confirmed)
 exports.startConversation = async (req, res) => {
@@ -38,7 +39,7 @@ exports.startConversation = async (req, res) => {
 
     res.status(201).json(conversation);
   } catch (err) {
-    console.error("Start Conversation Error:", err);
+    logger.error("Start Conversation Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -55,7 +56,7 @@ exports.getUserConversations = async (req, res) => {
 
     res.json(conversations);
   } catch (err) {
-    console.error("Fetch Conversations Error:", err);
+    logger.error("Fetch Conversations Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };

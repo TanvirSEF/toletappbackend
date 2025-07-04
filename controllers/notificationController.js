@@ -1,10 +1,12 @@
 const Notification = require("../models/notification");
+const logger = require("../config/logger");
 
 exports.getUserNotifications = async (req, res) => {
   try {
     const notifications = await Notification.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.json(notifications);
   } catch (error) {
+    logger.error("Get User Notifications Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -20,7 +22,7 @@ exports.markAsRead = async (req, res) => {
     await notification.save();
     res.json({ message: "Notification marked as read" });
   } catch (err) {
-    console.error("Mark As Read Error:", err);
+    logger.error("Mark As Read Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -33,7 +35,7 @@ exports.getUnreadCount = async (req, res) => {
     });
     res.json({ count });
   } catch (err) {
-    console.error("Unread Count Error:", err);
+    logger.error("Unread Count Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };

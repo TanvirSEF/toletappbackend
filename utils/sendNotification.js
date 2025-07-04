@@ -1,5 +1,6 @@
 // utils/sendNotification.js
 const Notification = require("../models/notification");
+const logger = require("../config/logger");
 
 const sendNotification = async ({ userId, type, message, link, io }) => {
   try {
@@ -17,7 +18,7 @@ const sendNotification = async ({ userId, type, message, link, io }) => {
 
     return notification;
   } catch (error) {
-    console.error("Notification Error:", error.message);
+    logger.error("Notification Error:", error.message);
   }
 };
 

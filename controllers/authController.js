@@ -1,5 +1,7 @@
 const User = require("../models/user");
 const jwt = require("jsonwebtoken");
+const sendEmail = require("../utils/sendEmail");
+const logger = require("../config/logger");
 
 // Token generate function
 const generateToken = (user) => {
@@ -52,6 +54,7 @@ exports.registerUser = async (req, res) => {
          <p>Thanks for registering on To-Let. Let your rental journey begin!</p>`,
     });
   } catch (err) {
+    logger.error("Auth Register Error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -82,6 +85,7 @@ exports.loginUser = async (req, res) => {
       token: generateToken(user),
     });
   } catch (err) {
+    logger.error("Auth Login Error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };

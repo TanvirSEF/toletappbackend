@@ -5,7 +5,7 @@ const propertySchema = new mongoose.Schema({
   description: { type: String, required: true },
   address: { type: String, required: true },
   price: { type: Number, required: true },
-  size: { type: String, required: true },
+  size: { type: Number, required: true }, // Size in square feet
   images: { type: [String], default: [] },
   owner: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
   isAvailable: { type: Boolean, default: true },
