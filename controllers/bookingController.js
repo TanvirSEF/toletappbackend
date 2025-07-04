@@ -53,23 +53,71 @@ exports.createBooking = async (req, res) => {
 
 exports.getMyBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({ renter: req.user._id })
-      .populate("property")
-      .populate("owner", "name email phone");
+    const bookings = await Booking.aggregate([
+      {
+        $match: { renter: req.user._id },
+      },
+      {
+        $lookup: {
+          from: "properties",
+          localField: "property",
+          foreignField: "_id",
+          as: "property",
+        },
+      },
+      {
+        $unwind: "$property",
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "owner",
+        },
+      },
+      {
+        $unwind: "$owner",
+      },
+      {
+        $project: {
+          _id: 1,
+          property: 1,
+          renter: 1,
+          owner: {
+            _id: "$owner._id",
+            name: {
+              $cond: {
+                if: "$isContactRevealed",
+                then: "$owner.name",
+                else: "Hidden",
+              },
+            },
+            email: {
+              $cond: {
+                if: "$isContactRevealed",
+                then: "$owner.email",
+                else: "Hidden",
+              },
+            },
+            phone: {
+              $cond: {
+                if: "$isContactRevealed",
+                then: "$owner.phone",
+                else: "Hidden",
+              },
+            },
+          },
+          amount: 1,
+          commission: 1,
+          isContactRevealed: 1,
+          status: 1,
+          createdAt: 1,
+        },
+      },
+    ]);
 
-    const visibleContacts = bookings.map((b) => {
-      const obj = b.toObject();
-      if (!b.isContactRevealed) {
-        obj.owner = {
-          name: "Hidden",
-          email: "Hidden",
-          phone: "Hidden",
-        };
-      }
-      return obj;
-    });
-
-    res.json(visibleContacts);
+    res.json(bookings);
   } catch (err) {
     logger.error("Get My Bookings Error:", err);
     res.status(500).json({ message: "Server Error" });
