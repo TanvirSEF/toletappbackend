@@ -116,6 +116,12 @@ exports.confirmBooking = async (req, res) => {
       message: `Your booking has been confirmed.`,
       link: `/bookings/my`,
     });
+    await sendEmail({
+      to: renter.email,
+      subject: "Booking Confirmed",
+      html: `<p>Dear ${renter.name},</p>
+         <p>Your booking for the property <strong>${property.title}</strong> has been <b>confirmed</b>.</p>`,
+    });
     res.json({ message: "Booking confirmed", booking });
   } catch (err) {
     res.status(500).json({ message: "Server error" });

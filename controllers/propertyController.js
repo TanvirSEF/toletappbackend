@@ -20,17 +20,69 @@ exports.createProperty = async (req, res) => {
   }
 };
 
-// Public Property List (Contact Hide)
+
 exports.getAllProperties = async (req, res) => {
   try {
-    const properties = await Property.find({ isAvailable: true })
-      .populate("owner", "name address");  // Only name & address shown
+    const {
+      location,
+      minPrice,
+      maxPrice,
+      minSize,
+      maxSize,
+      isAvailable,
+      sort
+    } = req.query;
+
+    const query = {};
+    if (location) {
+      query.address = { $regex: location, $options: "i" };
+    }
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = Number(minPrice);
+      if (maxPrice) query.price.$lte = Number(maxPrice);
+    }
+    if (isAvailable !== undefined) {
+      query.isAvailable = isAvailable === "true";
+    }
+
+    let sortOption = { date: -1 };
+    if (sort === "priceLowToHigh") sortOption = { price: 1 };
+    else if (sort === "priceHighToLow") sortOption = { price: -1 };
+    const properties = await Property.aggregate([
+      {
+        $addFields: {
+          numericSize: {
+            $toInt: {
+              $arrayElemAt: [
+                { $split: ["$size", " "] },
+                0
+              ]
+            }
+          }
+        }
+      },
+      {
+        $match: {
+          ...query,
+          ...(minSize || maxSize ? {
+            numericSize: {
+              ...(minSize ? { $gte: parseInt(minSize) } : {}),
+              ...(maxSize ? { $lte: parseInt(maxSize) } : {})
+            }
+          } : {})
+        }
+      },
+      { $sort: sortOption }
+    ]);
 
     res.json(properties);
   } catch (err) {
+    console.error("Filter Error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 // Owner's own properties
 exports.getMyProperties = async (req, res) => {

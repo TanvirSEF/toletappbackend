@@ -44,6 +44,13 @@ exports.registerUser = async (req, res) => {
       address: user.address,
       image: user.image,
     });
+
+    await sendEmail({
+      to: user.email,
+      subject: "🎉 Welcome to To-Let!",
+      html: `<p>Hello ${user.name},</p>
+         <p>Thanks for registering on To-Let. Let your rental journey begin!</p>`,
+    });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
