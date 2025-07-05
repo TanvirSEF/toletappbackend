@@ -11,4 +11,5 @@ router.put("/:id/confirm", protect, authorize("admin", "owner"), confirmBooking)
 router.put("/:id/cancel", protect, authorize("admin", "owner"), cancelBooking);
 
 
+
 module.exports = router;

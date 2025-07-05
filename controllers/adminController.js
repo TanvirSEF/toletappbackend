@@ -42,6 +42,7 @@ exports.createAdminUser = async (req, res) => {
       token,
     });
   } catch (err) {
+    logger.error("Create Admin User Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };

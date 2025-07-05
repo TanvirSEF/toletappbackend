@@ -10,7 +10,7 @@ const {
   getMyProperties,
   updateProperty,
   deleteProperty,
-  uploadPropertyImagesController,
+  addPropertyImages,
 } = require("../controllers/propertyController");
 
 // Public Route - All Properties
@@ -24,6 +24,7 @@ router.post(
   "/",
   protect,
   authorize("owner"),
+  uploadPropertyImages.array("images", 5), // Add this middleware
   [
     body("title", "Title is required").not().isEmpty(),
     body("description", "Description is required").not().isEmpty(),
@@ -51,14 +52,16 @@ router.put(
 
 // Owner Delete Property
 router.delete("/:id", protect, authorize("owner"), deleteProperty);
-// Route
+
+// Add Images to Property
 router.post(
-  "/:id/upload-images",
+  "/:id/images",
   protect,
-  authorize("owner", "admin"),
+  authorize("owner"),
   uploadPropertyImages.array("images", 5),
-  uploadPropertyImagesController
+  addPropertyImages
 );
+
 
 
 module.exports = router;

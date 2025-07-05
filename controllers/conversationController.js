@@ -18,6 +18,7 @@ exports.startConversation = async (req, res) => {
     if (booking.status !== "confirmed") {
       return res.status(403).json({ message: "Chat not allowed until booking is confirmed" });
     }
+    
 
     // Only renter or owner can initiate conversation
     if (

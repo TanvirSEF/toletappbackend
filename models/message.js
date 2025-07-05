@@ -15,7 +15,10 @@ const messageSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  isRead: { type: Boolean, default: false },
+  seenBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'user'
+  }],
   sentAt: {
     type: Date,
     default: Date.now,

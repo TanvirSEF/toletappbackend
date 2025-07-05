@@ -9,12 +9,10 @@ exports.createBooking = async (req, res) => {
   try {
     const { propertyId } = req.body;
     const renterId = req.user._id;
-
     const property = await Property.findById(propertyId).populate("owner");
     if (!property) {
       return res.status(404).json({ message: "Property not found" });
     }
-
     // Check if already booked by same renter
     const existingBooking = await Booking.findOne({
       property: propertyId,
@@ -25,10 +23,8 @@ exports.createBooking = async (req, res) => {
         .status(400)
         .json({ message: "You already booked this property" });
     }
-
     const commissionRate = 0.05;
     const commissionAmount = property.price * commissionRate;
-
     const booking = await Booking.create({
       property: propertyId,
       renter: renterId,
@@ -36,14 +32,14 @@ exports.createBooking = async (req, res) => {
       amount: property.price,
       commission: commissionAmount,
     });
-
+    const io = req.app.get("io");
     await sendNotification({
+      io,
       userId: property.owner._id,
       type: "booking",
       message: `${req.user.name} has requested to book your property.`,
       link: `/bookings/all`,
     });
-
     res.status(201).json({ message: "Booking successful", booking });
   } catch (error) {
     logger.error("Create Booking Error:", error);
@@ -116,7 +112,6 @@ exports.getMyBookings = async (req, res) => {
         },
       },
     ]);
-
     res.json(bookings);
   } catch (err) {
     logger.error("Get My Bookings Error:", err);
@@ -141,9 +136,7 @@ exports.getAllBookings = async (req, res) => {
 exports.confirmBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id).populate('renter').populate('property');
-
     if (!booking) return res.status(404).json({ message: "Booking not found" });
-
     // Check if current user is the owner or admin
     if (
       req.user.role !== "admin" &&
@@ -154,10 +147,12 @@ exports.confirmBooking = async (req, res) => {
     booking.status = "confirmed";
     booking.isContactRevealed = true;
     await booking.save();
+    const io = req.app.get("io");
     await sendNotification({
-      userId: booking.renter,
+      io,
+      userId: booking.renter._id,
       type: "booking",
-      message: `Your booking has been confirmed.`,
+      message: `Your booking for ${booking.property.title} has been confirmed.`,
       link: `/bookings/my`,
     });
     await sendEmail({
@@ -191,7 +186,9 @@ exports.cancelBooking = async (req, res) => {
 
     await booking.save();
 
+    const io = req.app.get("io");
     await sendNotification({
+      io,
       userId: booking.renter._id,
       type: "booking",
       message: `Your booking for the property ${booking.property.title} has been cancelled.`,
@@ -211,3 +208,5 @@ exports.cancelBooking = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+

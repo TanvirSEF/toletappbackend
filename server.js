@@ -24,10 +24,8 @@ const io = socketio(server, {
   },
 });
 
-// Share io and online users across app
-const onlineUsers = new Map();
+// Share io across app
 app.set("io", io);
-app.set("onlineUsers", onlineUsers);
 
 // Middleware
 app.use(cors());
@@ -69,31 +67,35 @@ connectDB();
 
 // Socket.io Real-time Handlers
 io.on("connection", (socket) => {
-  logger.info("🔌 User connected:", socket.id);
+  logger.info(`🔌 User connected: ${socket.id}`);
 
-  socket.on("join", (userId) => {
-    onlineUsers.set(userId.toString(), socket.id);
-    logger.info(`User ${userId} joined with socket ID ${socket.id}`);
-  });
-
-  socket.on("sendMessage", ({ senderId, receiverId, message }) => {
-    const receiverSocketId = onlineUsers.get(receiverId.toString());
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("receiveMessage", {
-        senderId,
-        message,
-      });
+  // User joins their own room for personal notifications
+  socket.on("join_user_room", (userId) => {
+    if (userId) {
+      socket.join(userId.toString());
+      logger.info(`User ${userId} joined their personal room.`);
     }
   });
+
+  // User joins a conversation room
+  socket.on("join_conversation_room", (conversationId) => {
+    if (conversationId) {
+      socket.join(conversationId.toString());
+      logger.info(`User ${socket.id} joined conversation ${conversationId}`);
+    }
+  });
+
+  // User leaves a conversation room
+  socket.on("leave_conversation_room", (conversationId) => {
+    if (conversationId) {
+      socket.leave(conversationId.toString());
+      logger.info(`User ${socket.id} left conversation ${conversationId}`);
+    }
+  });
+
 
   socket.on("disconnect", () => {
-    for (let [userId, socketId] of onlineUsers.entries()) {
-      if (socketId === socket.id) {
-        onlineUsers.delete(userId);
-        break;
-      }
-    }
-    logger.info("User disconnected:", socket.id);
+    logger.info(`User disconnected: ${socket.id}`);
   });
 });
 

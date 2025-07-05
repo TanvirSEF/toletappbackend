@@ -32,28 +32,27 @@ exports.sendMessage = async (req, res) => {
     );
 
     const receiver = await User.findById(receiverId);
-
-    // Real-time push via Socket.io
     const io = req.app.get("io");
-    const onlineUsers = req.app.get("onlineUsers");
-    const receiverSocketId = onlineUsers.get(receiverId.toString());
 
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("new_notification", {
-        type: "message",
-        from: senderId,
-        message: `You have a new message.`,
-        link: `/messages/${conversationId}`,
-      });
-    }
+    // Emit message to the specific conversation room
+    io.to(conversationId.toString()).emit("new_message", message);
+
+    // Send notification to the receiver's personal room
+    io.to(receiverId.toString()).emit("new_notification", {
+      type: "message",
+      message: `You have a new message from ${req.user.name}.`,
+      link: `/messages/${conversationId}`,
+    });
 
     // DB Notification
     await sendNotification({
+      io,
       userId: receiverId,
       type: "message",
-      message: `You have a new message.`,
+      message: `You have a new message from ${req.user.name}.`,
       link: `/messages/${conversationId}`,
     });
+
     await sendEmail({
       to: receiver.email,
       subject: "📩 New Message in To-Let",
@@ -82,6 +81,7 @@ exports.getMessagesByConversation = async (req, res) => {
 
     const messages = await Message.find({ conversation: conversationId })
       .populate("sender", "name email role")
+      .populate("seenBy", "name image")
       .sort({ sentAt: 1 });
 
     res.json(messages);
@@ -91,24 +91,31 @@ exports.getMessagesByConversation = async (req, res) => {
   }
 };
 
-exports.markMessagesAsRead = async (req, res) => {
+exports.markMessageAsSeen = async (req, res) => {
   try {
-    const { conversationId } = req.params;
+    const { messageId } = req.params;
     const userId = req.user._id;
 
-    const conversation = await Conversation.findById(conversationId);
-    if (!conversation || !conversation.participants.includes(userId)) {
-      return res.status(403).json({ message: "Unauthorized" });
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: "Message not found" });
     }
 
-    await Message.updateMany(
-      { conversation: conversationId, sender: { $ne: userId }, isRead: false },
-      { $set: { isRead: true } }
-    );
+    // Add user to seenBy array if not already there
+    if (!message.seenBy.includes(userId)) {
+      message.seenBy.push(userId);
+      await message.save();
+    }
 
-    res.json({ message: "Messages marked as read" });
+    const io = req.app.get("io");
+    io.to(message.conversation.toString()).emit("message_seen", {
+      messageId: message._id,
+      seenBy: message.seenBy,
+    });
+
+    res.json({ message: "Message marked as seen" });
   } catch (err) {
-    logger.error("Mark as read error:", err);
+    logger.error("Mark as seen error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -118,7 +125,7 @@ exports.getUnreadMessageCount = async (req, res) => {
     const userId = req.user._id;
 
     const count = await Message.countDocuments({
-      isRead: false,
+      seenBy: { $ne: userId },
       sender: { $ne: userId },
       conversation: {
         $in: await Conversation.find({ participants: userId }).distinct("_id"),
