@@ -7,12 +7,14 @@ const socketio = require("socket.io");
 const helmet = require("helmet");
 const mongoSanitize = require("express-mongo-sanitize");
 const hpp = require('hpp');
+const cookieParser = require("cookie-parser");
 
 const logger = require("./config/logger");
 
 dotenv.config();
 
 const app = express();
+app.use(cookieParser());
 const server = http.createServer(app);
 
 

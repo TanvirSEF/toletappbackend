@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
   address: { type: String, required: true },
   image: { type: String, default: "" },
   role: { type: String, enum: ["renter", "owner", "admin"], default: "renter" },
-   upgradeRequest: {
+  upgradeRequest: {
     type: Boolean,
     default: false,
   },
@@ -20,11 +20,16 @@ const userSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   favorites: [
-  {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "property",
-  },
-],
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "property",
+    },
+  ],
+  isVerified: { type: Boolean, default: false },
+  verificationCode: String,
+  verificationCodeExpires: Date,
+  resetCode: String,
+  resetCodeExpires: Date,
 });
 
 // Hash password before save
